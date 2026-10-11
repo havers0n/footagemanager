@@ -27,7 +27,7 @@ def scan(asset_id: int | None = None, force: bool = False):
     if asset_id is not None:
         with database() as conn:
             if not conn.execute("SELECT 1 FROM assets WHERE id=? AND media_type='video' AND status='ready'", (asset_id,)).fetchone():
-                raise HTTPException(404, 'Готовое видео не найдено')
+                raise HTTPException(404, 'Processed video not found')
     return {'queued': index_worker.enqueue_vehicles(asset_id, force)}
 
 
@@ -61,7 +61,7 @@ def export(asset_id: int | None = None):
         rows = conn.execute('''SELECT v.*,a.filename,a.path source_video FROM vehicle_crops v JOIN assets a ON a.id=v.asset_id
                                WHERE v.archived=0 AND (? IS NULL OR v.asset_id=?) ORDER BY v.asset_id,v.timestamp_ms''', (asset_id, asset_id)).fetchall()
     if not rows:
-        raise HTTPException(404, 'Нет фотографий для скачивания')
+        raise HTTPException(404, 'No photos to download')
     with tempfile.NamedTemporaryFile(suffix='.zip', delete=False) as temporary:
         path = Path(temporary.name)
     try:
@@ -72,14 +72,14 @@ def export(asset_id: int | None = None):
             for row in rows:
                 image = Path(row['image_path'])
                 if not image.is_file():
-                    raise HTTPException(409, 'Фото недоступно. Дождитесь окончания обработки и повторите скачивание.')
+                    raise HTTPException(409, 'Photo unavailable. Wait for processing to finish and try downloading again.')
                 name = f"video-{row['asset_id']}/auto-{row['id']:05d}-{row['timestamp_ms']}ms.jpg"
                 archive.write(image, name)
                 frame_name = ''
                 if row['frame_path']:
                     frame = Path(row['frame_path'])
                     if not frame.is_file():
-                        raise HTTPException(409, 'Исходный кадр недоступен')
+                        raise HTTPException(409, 'Original frame unavailable')
                     frame_name = f"video-{row['asset_id']}/auto-{row['id']:05d}-{row['timestamp_ms']}ms-frame.jpg"
                     archive.write(frame, frame_name)
                 writer.writerow([name, frame_name, row['source_video'], row['timestamp_ms'], row['track_id'],
@@ -97,7 +97,7 @@ def image(vehicle_id: int, download: bool = False):
     with database() as conn:
         row = conn.execute('SELECT image_path FROM vehicle_crops WHERE id=?', (vehicle_id,)).fetchone()
     if not row or not Path(row['image_path']).is_file():
-        raise HTTPException(404, 'Фото недоступно')
+        raise HTTPException(404, 'Photo unavailable')
     return FileResponse(row['image_path'], media_type='image/jpeg', filename=f'auto-{vehicle_id}.jpg' if download else None)
 
 
@@ -106,7 +106,7 @@ def original_frame(vehicle_id: int):
     with database() as conn:
         row = conn.execute('SELECT frame_path FROM vehicle_crops WHERE id=?', (vehicle_id,)).fetchone()
     if not row or not row['frame_path'] or not Path(row['frame_path']).is_file():
-        raise HTTPException(404, 'Исходный кадр недоступен. Для старых результатов запустите обработку треков.')
+        raise HTTPException(404, 'Original frame unavailable. Run track processing for legacy results.')
     return FileResponse(row['frame_path'], media_type='image/jpeg')
 
 
@@ -114,10 +114,10 @@ def original_frame(vehicle_id: int):
 def label(vehicle_id: int, payload: VehicleLabel):
     cleaned = payload.label.strip()
     if not cleaned:
-        raise HTTPException(422, 'Введите подпись')
+        raise HTTPException(422, 'Enter a label')
     with database() as conn:
         if not conn.execute('UPDATE vehicle_crops SET label=? WHERE id=?', (cleaned, vehicle_id)).rowcount:
-            raise HTTPException(404, 'Фото не найдено')
+            raise HTTPException(404, 'Photo not found')
     return {'label': cleaned}
 
 
@@ -126,7 +126,7 @@ def remove(vehicle_id: int):
     with database() as conn:
         row = conn.execute('SELECT image_path,frame_path FROM vehicle_crops WHERE id=?', (vehicle_id,)).fetchone()
         if not row:
-            raise HTTPException(404, 'Фото не найдено')
+            raise HTTPException(404, 'Photo not found')
         conn.execute('DELETE FROM vehicle_crops WHERE id=?', (vehicle_id,))
     Path(row['image_path']).unlink(missing_ok=True)
     if row['frame_path']:

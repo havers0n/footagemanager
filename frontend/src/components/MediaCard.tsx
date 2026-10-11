@@ -14,7 +14,7 @@ export function MediaCard({ result, onOpen }: MediaCardProps) {
   const clipDuration = Math.max(0, result.end_ms - result.start_ms)
   return (
     <article className="media-card">
-      <button className="thumbnail-button" onClick={() => onOpen(result)} aria-label={`Открыть ${result.filename}`}>
+      <button className="thumbnail-button" onClick={() => onOpen(result)} aria-label={`Open ${result.filename}`}>
         {result.thumbnail_url ? <img src={result.thumbnail_url} alt="" loading="lazy" /> : <div className="thumbnail-placeholder"><TypeIcon size={34} /></div>}
         <span className="type-chip"><TypeIcon size={13} />{result.media_type}</span>
         {result.media_type !== 'image' ? <span className="duration-chip">{timecode(clipDuration)}</span> : null}

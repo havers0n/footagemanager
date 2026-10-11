@@ -8,6 +8,6 @@ export function timecode(value: number): string {
 }
 
 export function compactCount(value: number): string {
-  return new Intl.NumberFormat('ru-RU', { notation: 'compact', maximumFractionDigits: 1 }).format(value)
+  return new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(value)
 }
 

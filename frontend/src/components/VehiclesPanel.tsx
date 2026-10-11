@@ -13,7 +13,7 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, options)
   if (!response.ok) {
     const body = await response.json().catch(() => ({}))
-    throw new Error(body.detail || 'Не удалось выполнить запрос')
+    throw new Error(body.detail || 'Request failed')
   }
   return response.json() as Promise<T>
 }
@@ -35,23 +35,23 @@ function VehicleCard({ item, onChange, onError, onGroup }: { item: Vehicle; onCh
     <a href={`/api/vehicles/${item.id}/image`} target="_blank" rel="noreferrer"><img src={`/api/vehicles/${item.id}/image`} alt={item.label} loading="lazy" /></a>
     <div className="vehicle-body">
       <small title={item.filename}>{item.filename}</small>
-      <p>{item.track_id ? `Трек ${item.track_id.split('-').slice(-2).join('-')} · ` : 'Старая обработка · '}{Math.floor(seconds / 60)}:{String(Math.floor(seconds % 60)).padStart(2, '0')} · Уверенность {Math.round(item.confidence * 100)}%</p>
-      {item.group_id && item.group_size > 1 && <button className="vehicle-group" onClick={() => onGroup(item.group_id!)}>Возможно один автомобиль · {item.group_size} трека</button>}
-      <details className="vehicle-details"><summary>Данные кадра и качество</summary>
-        <p>Источник: {item.source_video}</p><p>Timestamp: {item.timestamp_ms} мс</p>
-        <p>Track ID: {item.track_id || 'Нет — запустите отслеживание'}</p>
-        <p>Bounding box: {item.bbox?.join(', ')}</p><p>Crop с отступом: {item.crop_bbox?.join(', ') || 'Без отступа'}</p>
-        {item.quality && <p>Качество: {Math.round((item.quality_score || 0) * 100)}% · Резкость: {Math.round(item.quality.sharpness)} · Свободные края: {Math.round(item.quality.edge_clearance * 100)}% · Оценка перекрытия: {Math.round(item.quality.occlusion_estimate * 100)}%</p>}
+      <p>{item.track_id ? `Track ${item.track_id.split('-').slice(-2).join('-')} · ` : 'Legacy result · '}{Math.floor(seconds / 60)}:{String(Math.floor(seconds % 60)).padStart(2, '0')} · Confidence {Math.round(item.confidence * 100)}%</p>
+      {item.group_id && item.group_size > 1 && <button className="vehicle-group" onClick={() => onGroup(item.group_id!)}>Possibly the same vehicle · {item.group_size} tracks</button>}
+      <details className="vehicle-details"><summary>Frame details and quality</summary>
+        <p>Source: {item.source_video}</p><p>Timestamp: {item.timestamp_ms} ms</p>
+        <p>Track ID: {item.track_id || 'None — run tracking'}</p>
+        <p>Bounding box: {item.bbox?.join(', ')}</p><p>Padded crop: {item.crop_bbox?.join(', ') || 'No padding'}</p>
+        {item.quality && <p>Quality: {Math.round((item.quality_score || 0) * 100)}% · Sharpness: {Math.round(item.quality.sharpness)} · Edge clearance: {Math.round(item.quality.edge_clearance * 100)}% · Estimated occlusion: {Math.round(item.quality.occlusion_estimate * 100)}%</p>}
       </details>
       <form onSubmit={(event) => { event.preventDefault(); void act(false) }}>
-        <input aria-label="Подпись автомобиля" value={label} maxLength={120} onChange={(event) => setLabel(event.target.value)} />
-        <button disabled={busy || !label.trim() || label === item.label}>Сохранить</button>
+        <input aria-label="Vehicle label" value={label} maxLength={120} onChange={(event) => setLabel(event.target.value)} />
+        <button disabled={busy || !label.trim() || label === item.label}>Save</button>
       </form>
       <div className="vehicle-links">
-        <a href={`/api/vehicles/${item.id}/image?download=true`}>Скачать фото</a>
-        {item.has_frame && <a href={`/api/vehicles/${item.id}/frame`} target="_blank" rel="noreferrer">Исходный кадр ↗</a>}
-        <a href={`/api/assets/${item.asset_id}/media#t=${seconds}`} target="_blank" rel="noreferrer">В видео ↗</a>
-        <button disabled={busy} onClick={() => void act(true)}>Убрать</button>
+        <a href={`/api/vehicles/${item.id}/image?download=true`}>Download photo</a>
+        {item.has_frame && <a href={`/api/vehicles/${item.id}/frame`} target="_blank" rel="noreferrer">Original frame ↗</a>}
+        <a href={`/api/assets/${item.asset_id}/media#t=${seconds}`} target="_blank" rel="noreferrer">View in video ↗</a>
+        <button disabled={busy} onClick={() => void act(true)}>Remove</button>
       </div>
     </div>
   </article>
@@ -88,29 +88,29 @@ export function VehiclesPanel({ completed, onQueue }: { completed: number; onQue
     setBusy(true); setError('')
     try {
       const result = await request<{ queued: number }>(`/api/vehicles/scan?force=${force}${video ? `&asset_id=${video}` : ''}`, { method: 'POST' })
-      setNotice(result.queued ? `В очереди ${result.queued} видео. Лучшие кадры треков появятся после обработки каждого видео. Предыдущие результаты останутся в истории.` : 'Новых видео для обработки нет. Уже обработанные снимки и подписи сохранены.')
+      setNotice(result.queued ? `Queued ${result.queued} videos. The best frame for each track will appear after its video is processed. Previous results will remain in history.` : 'No new videos to process. Existing photos and labels have been preserved.')
       onQueue()
     } catch (error) { setError(String(error)) }
     finally { setBusy(false) }
   }
   return <section className="results-section vehicles-section">
-    <header className="results-header"><div><h2>Автомобили</h2><span>{catalog.total} фото</span></div></header>
-    <p className="vehicle-description">Один лучший кадр на трек: размер, уверенность, резкость, свободные края и оценка перекрытия. Похожие машины из разных сцен объединяются в предполагаемые группы без удаления снимков. Марки и модели не определяются.</p>
+    <header className="results-header"><div><h2>Vehicles</h2><span>{catalog.total} photos</span></div></header>
+    <p className="vehicle-description">One best frame per track, scored by size, confidence, sharpness, edge clearance, and estimated occlusion. Similar vehicles from different scenes are grouped as possible matches without deleting photos. Makes and models are not identified.</p>
     <div className="vehicle-toolbar">
-      <select aria-label="Видео для поиска автомобилей" value={video} onChange={event => { setVideo(event.target.value); setGroup(''); setOffset(0) }}>
-        <option value="">Все видео</option>{catalog.videos.map(item => <option key={item.id} value={item.id}>{item.filename}</option>)}
+      <select aria-label="Video for vehicle detection" value={video} onChange={event => { setVideo(event.target.value); setGroup(''); setOffset(0) }}>
+        <option value="">All videos</option>{catalog.videos.map(item => <option key={item.id} value={item.id}>{item.filename}</option>)}
       </select>
-      <input placeholder="Поиск по подписи или видео" aria-label="Поиск автомобилей" value={query} onChange={event => { setQuery(event.target.value); setOffset(0) }} />
-      <button className="primary-button" disabled={busy || !catalog.videos.length} onClick={() => void scan()}>Найти автомобили</button>
-      <button disabled={busy || !catalog.videos.length} onClick={() => void scan(true)}>Пересчитать треки</button>
-      {catalog.total > 0 && !archived && <a className="vehicle-download" href={`/api/vehicles/export${video ? `?asset_id=${video}` : ''}`}>Скачать crop, кадры и метки</a>}
+      <input placeholder="Search by label or video" aria-label="Search vehicles" value={query} onChange={event => { setQuery(event.target.value); setOffset(0) }} />
+      <button className="primary-button" disabled={busy || !catalog.videos.length} onClick={() => void scan()}>Find vehicles</button>
+      <button disabled={busy || !catalog.videos.length} onClick={() => void scan(true)}>Reprocess tracks</button>
+      {catalog.total > 0 && !archived && <a className="vehicle-download" href={`/api/vehicles/export${video ? `?asset_id=${video}` : ''}`}>Download crops, frames, and labels</a>}
     </div>
-    <label className="vehicle-history"><input type="checkbox" checked={archived} onChange={event => { setArchived(event.target.checked); setGroup(''); setOffset(0) }} /> Предыдущие обработки (сохранённые подписи)</label>
-    {group && <p className="vehicle-group-header">Возможно один автомобиль · {catalog.total} трека <button onClick={() => { setGroup(''); setOffset(0) }}>Все результаты</button></p>}
+    <label className="vehicle-history"><input type="checkbox" checked={archived} onChange={event => { setArchived(event.target.checked); setGroup(''); setOffset(0) }} /> Previous runs (saved labels)</label>
+    {group && <p className="vehicle-group-header">Possibly the same vehicle · {catalog.total} tracks <button onClick={() => { setGroup(''); setOffset(0) }}>All results</button></p>}
     {notice && <p role="status">{notice}</p>}
-    {error && <div className="page-error" role="alert">{error}<button onClick={() => setError('')}>Закрыть</button></div>}
+    {error && <div className="page-error" role="alert">{error}<button onClick={() => setError('')}>Close</button></div>}
     <div className="vehicle-grid">{catalog.items.map(item => <VehicleCard key={item.id} item={item} onChange={refresh} onError={setError} onGroup={value => { setGroup(value); setQuery(''); setOffset(0) }} />)}</div>
-    {!catalog.items.length && <div className="empty-state"><h2>Фотографий пока нет</h2><p>Выберите видео и нажмите «Найти автомобили». Ход работы — в разделе «Обработка».</p></div>}
-    {catalog.total > 60 && <div className="vehicle-pagination"><button disabled={!offset} onClick={() => setOffset(Math.max(0, offset - 60))}>Назад</button><span>{offset + 1}–{Math.min(offset + 60, catalog.total)} из {catalog.total}</span><button disabled={offset + 60 >= catalog.total} onClick={() => setOffset(offset + 60)}>Далее</button></div>}
+    {!catalog.items.length && <div className="empty-state"><h2>No photos yet</h2><p>Select a video and click “Find vehicles”. Follow progress in “Processing”.</p></div>}
+    {catalog.total > 60 && <div className="vehicle-pagination"><button disabled={!offset} onClick={() => setOffset(Math.max(0, offset - 60))}>Previous</button><span>{offset + 1}–{Math.min(offset + 60, catalog.total)} of {catalog.total}</span><button disabled={offset + 60 >= catalog.total} onClick={() => setOffset(offset + 60)}>Next</button></div>}
   </section>
 }

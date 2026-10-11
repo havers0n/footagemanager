@@ -104,7 +104,7 @@ class IndexWorker:
                     "SELECT 1 FROM jobs WHERE asset_id=? AND kind='vehicles_v2' AND (status IN ('queued','running') OR (status='completed' AND ?=0))",
                     (asset['id'], int(force)),
                 ).fetchone():
-                    conn.execute("INSERT INTO jobs(asset_id,kind,detail) VALUES (?,'vehicles_v2','Отслеживание автомобилей')", (asset['id'],))
+                    conn.execute("INSERT INTO jobs(asset_id,kind,detail) VALUES (?,'vehicles_v2','Vehicle tracking')", (asset['id'],))
                     count += 1
         self.wake()
         return count
@@ -114,7 +114,7 @@ class IndexWorker:
         with database() as conn:
             asset = conn.execute('SELECT * FROM assets WHERE id=?', (job['asset_id'],)).fetchone()
         if not asset:
-            raise RuntimeError('Видео удалено')
+            raise RuntimeError('Video deleted')
 
         def cancelled():
             while self.paused() and not self._stop.is_set():

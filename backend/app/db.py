@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS vehicle_crops (
     confidence REAL NOT NULL,
     bbox_json TEXT NOT NULL,
     image_path TEXT NOT NULL,
-    label TEXT NOT NULL DEFAULT 'Автомобиль'
+    label TEXT NOT NULL DEFAULT 'Car'
 );
 CREATE INDEX IF NOT EXISTS idx_vehicle_crops_asset ON vehicle_crops(asset_id);
 

@@ -1,115 +1,102 @@
 # Footage Manager
 
-Локальная медиатека для быстрого поиска сцен, реплик и звуков в исходниках. Оригинальные файлы не копируются и не изменяются.
+A local media library for quickly finding scenes, dialogue, and sounds in your source footage. Original files are neither copied nor modified.
 
-## Возможности
+## Features
 
-- автоматическое наблюдение за папками и возобновляемая очередь обработки;
-- обнаружение сцен PySceneDetect и облегчённые 720p-превью;
-- полнотекстовый поиск по именам, тегам и расшифровке;
-- опциональный локальный AI-поиск по изображению и звуку;
-- русский и английский запросы;
-- встроенный просмотр, ручные теги и быстрый/точный экспорт клипа;
-- локальные SQLite и LanceDB, без облачной отправки исходников.
+- Automatic folder monitoring and a resumable processing queue.
+- PySceneDetect scene detection and lightweight 720p previews.
+- Full-text search across filenames, tags, and transcripts.
+- Optional local AI search for images and audio.
+- English and Russian search queries.
+- Built-in playback, manual tags, and fast or frame-accurate clip export.
+- Local SQLite and LanceDB storage, without uploading source footage to the cloud.
 
-## Установка на Windows + WSL
+## Installation on Windows + WSL
 
-Требуются WSL2 Ubuntu, Python 3.11/3.12 и Node.js 20+. В WSL:
+Requires WSL2 Ubuntu, Python 3.11/3.12, and Node.js 20+. Run in WSL:
 
 ```bash
 sudo apt update
 sudo apt install -y python3-venv curl xz-utils
 ```
 
-Затем запустите `install-footage-manager.cmd`. Если FFmpeg отсутствует, установщик положит локальную сборку в папку проекта. Для полной AI-установки вместо него выполните в WSL:
+Then run `install-footage-manager.cmd`. If FFmpeg is missing, the installer downloads a local build into the project folder. For the full AI installation, run this in WSL instead:
 
 ```bash
 ./scripts/setup-wsl.sh --with-ai
 ```
 
-AI-набор большой: он устанавливает CUDA-совместимый PyTorch, WhisperX, SigLIP 2, CLAP, OPUS-MT и LanceDB. Модели загружаются при первом использовании и затем работают из локального кэша.
+The AI installation is large: it installs CUDA-compatible PyTorch, WhisperX, SigLIP 2, CLAP, OPUS-MT, and LanceDB. Models download on first use and subsequently run from the local cache.
 
-После установки запускайте `start-footage-manager.cmd`; приложение откроется на `http://127.0.0.1:8787`.
+After installation, run `start-footage-manager.cmd`; the application opens at `http://127.0.0.1:8787`.
 
-## Разработка
+## Development
 
 ```bash
 ./scripts/dev.sh
 ```
 
-Backend API: `http://127.0.0.1:8787/docs`. Интерфейс разработки: `http://127.0.0.1:5173`.
+Backend API documentation: `http://127.0.0.1:8787/docs`. Development interface: `http://127.0.0.1:5173`.
 
-## Конфигурация
+## Configuration
 
-Настройки задаются переменными окружения с префиксом `FOOTAGE_`:
+Settings use environment variables with the `FOOTAGE_` prefix:
 
-- `FOOTAGE_DATA_DIR` — база, кэш и индексы;
-- `FOOTAGE_EXPORT_DIR` — готовые клипы;
-- `FOOTAGE_SCAN_INTERVAL_SECONDS` — интервал проверки папок, по умолчанию 60;
-- `FOOTAGE_SEMANTIC_SEARCH_ENABLED` и `FOOTAGE_TRANSCRIPTION_ENABLED` — включение тяжёлых AI-этапов.
+- `FOOTAGE_DATA_DIR`: database, cache, and indexes.
+- `FOOTAGE_EXPORT_DIR`: exported clips.
+- `FOOTAGE_SCAN_INTERVAL_SECONDS`: folder scan interval in seconds; defaults to 60.
+- `FOOTAGE_SEMANTIC_SEARCH_ENABLED` and `FOOTAGE_TRANSCRIPTION_ENABLED`: enable the resource-intensive AI stages.
 
-## Лицензии моделей
+## Model licenses
 
-- Google SigLIP 2 — Apache 2.0;
-- LAION CLAP General — Apache 2.0;
-- Helsinki-NLP OPUS-MT ru→en — CC BY 4.0;
-- WhisperX и выбранные Whisper-модели — см. лицензии соответствующих проектов.
+- Google SigLIP 2: Apache 2.0.
+- LAION CLAP General: Apache 2.0.
+- Helsinki-NLP OPUS-MT ru→en: CC BY 4.0.
+- WhisperX and the selected Whisper models: see the respective project licenses.
 
-Программа не проверяет права на проиндексированные исходники; ответственность за использование материалов остаётся у владельца библиотеки.
+The application does not verify usage rights for indexed footage. The library owner remains responsible for how the material is used.
 
-## Автомобили из видео: треки и лучшие кадры
+## Vehicles in videos: tracks and best frames
 
-В разделе «Автомобили» выберите видео и нажмите «Найти автомобили».
-«Пересчитать треки» запускает новую обработку уже готового видео. Предыдущие результаты
-и подписи сохраняются в истории («Предыдущие обработки»); при совпадении времени и
-рамки пользовательская подпись переносится на новый трек. Исходное видео не изменяется.
-Новые видео после обычной индексации автоматически поступают в очередь отслеживания.
+In **Vehicles**, select a video and click **Find vehicles**. **Reprocess tracks** starts a new processing run for a previously processed video. Previous results and labels remain in **Previous runs**. When timestamps and bounding boxes match, custom labels carry over to the new tracks. The source video is not modified.
 
-Установка: `backend/.venv/bin/pip install -r backend/requirements-vehicles.txt`.
-Детектор YOLO11n и ByteTrack — Ultralytics, AGPL-3.0. Веса скачиваются при первом запуске,
-дальнейшая обработка локальная. Марки и модели не определяются, дообучения по подписям нет.
+New videos automatically enter the vehicle tracking queue after regular indexing.
 
-### Как работает обработка
+Install the dependencies:
 
-- PyAV последовательно декодирует исходник; timestamps берутся из реальных PTS кадров,
-  с учётом начала видеопотока. Это также поддерживает видео с переменной частотой кадров.
-- По умолчанию детектор анализирует до 5 кадров в секунду (шаг 200 мс), вход 640 пикселей,
-  на CPU. ByteTrack использует фильтр Калмана, глобальное сопоставление и слабые обнаружения
-  для продолжения трека; трек переживает до 2 секунд пропуска. На границе сцены трекер сбрасывается.
-- Для каждого подтверждённого ByteTrack трека хранится один лучший результат. Неподтверждённые одноразовые кандидаты не публикуются. Оценка: 25% относительный размер,
-  20% confidence, 25% нормированная резкость (дисперсия Лапласиана), 15% свободные края,
-  15% отсутствие перекрытия. Все составляющие сохраняются в метаданных.
-- Окклюзия — приближённая оценка площади объединения пересечений с другими обнаруженными
-  объектами. Детектор не знает глубину: возможны ошибки оценки и незамеченные перекрытия.
-- Сохраняются crop с padding 12,5% с каждой стороны рамки (с ограничением краями изображения)
-  и полный кадр исходного разрешения. Оба — JPEG quality 95, без нанесённой рамки.
-  Координаты bounding box измерены детектором, а не предсказаны трекером.
+```bash
+backend/.venv/bin/pip install -r backend/requirements-vehicles.txt
+```
 
-Каждый результат содержит source video, timestamp в мс, уникальный track_id (включая
-идентификаторы запуска и сцены), начало/конец наблюдения, confidence, bounding box,
-координаты padded crop, crop, полный frame, пользовательскую подпись и оценки качества.
-«Исходный кадр» открывает полный frame, «В видео» — видео на выбранном timestamp.
-Экспорт ZIP содержит crop, полные кадры и CSV со всеми перечисленными метаданными.
+The YOLO11n detector and ByteTrack are provided by Ultralytics under AGPL-3.0. Model weights download on first use; subsequent processing is local. Vehicle makes and models are not identified, and labels are not used for training.
 
-### Возможные совпадения
+### How processing works
 
-Похожие треки из разных сцен одного видео объединяются в группу «возможно один автомобиль».
-Используется консервативное сравнение perceptual hash, цветовой гистограммы и пропорций
-crop. В группе каждый результат должен совпадать с каждым другим; одновременные машины
-из одной сцены не группируются. Это эвристика внешнего сходства, а не подтверждённая
-идентичность: разные ракурсы могут не совпасть, внешне одинаковые машины — совпасть.
-Группировка не удаляет ни треки, ни файлы. Кнопка группы открывает все её результаты.
+- PyAV decodes the source sequentially. Timestamps come from actual frame PTS values, adjusted for the video stream start. Variable-frame-rate videos are supported.
+- By default, the detector analyzes up to 5 frames per second (200 ms intervals), with a 640-pixel input, on the CPU. ByteTrack uses a Kalman filter, global matching, and low-confidence detections to maintain tracks. Tracks survive gaps of up to 2 seconds. The tracker resets at scene boundaries.
+- One best result is stored per confirmed ByteTrack track. Unconfirmed, one-off candidates are not published. The quality score weights relative size at 25%, confidence at 20%, normalized sharpness (Laplacian variance) at 25%, edge clearance at 15%, and lack of occlusion at 15%. All components are stored in the metadata.
+- Occlusion is an approximate estimate of the union of overlaps with other detected objects. The detector has no depth information, so estimates may be wrong and some overlaps may go undetected.
+- Each result saves a crop with 12.5% padding on each side of the bounding box, clipped to the image boundaries, and a full-resolution frame. Both are JPEGs at quality 95, without a drawn bounding box. Bounding box coordinates come from the detector, rather than tracker predictions.
 
-### Настройки
+Each result includes the source video, timestamp in milliseconds, a unique `track_id` (including run and scene identifiers), observation start/end times, confidence, bounding box, padded crop coordinates, crop, full frame, custom label, and quality scores.
 
-- `FOOTAGE_VEHICLE_DETECTION_ENABLED=false` — отключить автоматический запуск для новых видео;
-- `FOOTAGE_VEHICLE_TRACK_SAMPLE_MS=200` — интервал анализа; увеличение снижает нагрузку,
-  но ухудшает отслеживание быстрого движения;
-- `FOOTAGE_VEHICLE_TRACK_GAP_MS=2000` — время удержания потерянного трека;
-- `FOOTAGE_VEHICLE_CROP_PADDING=0.125` — padding (ограничен диапазоном 10–15%);
-- `FOOTAGE_VEHICLE_CONFIDENCE=0.45` — порог для начала трека; слабые обнаружения >0.1
-  используются только для продолжения уже найденных треков.
+**Original frame** opens the full frame. **View in video** opens the video at the selected timestamp. ZIP exports include crops, full frames, and a CSV containing all of this metadata.
 
-Файлы: `FOOTAGE_DATA_DIR/cache/<video-id>/vehicles/<run-id>/`.
-Неудачная или прерванная обработка сохраняет прежние результаты; незавершённые новые
-файлы удаляются. История предыдущих успешных обработок сохраняется с файлами.
+### Possible matches
+
+Similar tracks from different scenes of the same video are grouped as **Possibly the same vehicle**. Matching conservatively compares perceptual hashes, color histograms, and crop proportions. Each result in a group must match every other result; simultaneous vehicles from the same scene are not grouped.
+
+This is a visual similarity heuristic, not a confirmed identity: different angles may fail to match, while different vehicles with similar appearances may match. Grouping does not delete tracks or files. Clicking the group button displays all of its results.
+
+### Settings
+
+- `FOOTAGE_VEHICLE_DETECTION_ENABLED=false`: disable automatic processing for new videos.
+- `FOOTAGE_VEHICLE_TRACK_SAMPLE_MS=200`: analysis interval. Increasing it reduces resource usage but makes fast motion harder to track.
+- `FOOTAGE_VEHICLE_TRACK_GAP_MS=2000`: how long a lost track is retained.
+- `FOOTAGE_VEHICLE_CROP_PADDING=0.125`: crop padding, constrained to 10–15%.
+- `FOOTAGE_VEHICLE_CONFIDENCE=0.45`: threshold for starting a track. Low-confidence detections above 0.1 are used only to continue existing tracks.
+
+Files are stored in `FOOTAGE_DATA_DIR/cache/<video-id>/vehicles/<run-id>/`.
+
+Failed or interrupted runs preserve previous results and remove incomplete new files. Previous successful runs remain in history along with their files.

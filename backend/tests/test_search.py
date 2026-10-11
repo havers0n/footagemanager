@@ -65,7 +65,7 @@ def test_wanted_hud_search_returns_exact_detection(monkeypatch):
     item = result["results"][0]
     assert item["result_id"] == f"{asset_id}:hud:{detection_id}"
     assert item["thumbnail_url"] == f"/api/hud/{detection_id}/thumbnail"
-    assert item["transcript"] == "Розыск: 4 ★"
+    assert item["transcript"] == "Wanted level: 4 ★"
     assert (item["start_ms"], item["end_ms"]) == (19_500, 24_500)
 
 
@@ -99,7 +99,7 @@ def test_ui_search_uses_enlarged_corner_index(monkeypatch):
     assert len(result["results"]) == 1
     item = result["results"][0]
     assert item["reason"] == "Game interface"
-    assert item["transcript"] == "Игровой интерфейс / HUD"
+    assert item["transcript"] == "Game interface / HUD"
     assert item["thumbnail_url"] == "/api/frames/77/thumbnail"
 
 

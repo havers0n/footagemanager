@@ -89,7 +89,7 @@ export function PlayerModal({ result, onClose, onTagsChanged }: PlayerModalProps
       const response = await api.updateTags(result.asset_id, tags)
       onTagsChanged(result.asset_id, response.tags)
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Не удалось сохранить теги')
+      setError(caught instanceof Error ? caught.message : 'Could not save tags')
     }
   }
 
@@ -109,7 +109,7 @@ export function PlayerModal({ result, onClose, onTagsChanged }: PlayerModalProps
       anchor.click()
       anchor.remove()
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Ошибка экспорта')
+      setError(caught instanceof Error ? caught.message : 'Export failed')
     } finally {
       setExporting(false)
     }
@@ -131,7 +131,7 @@ export function PlayerModal({ result, onClose, onTagsChanged }: PlayerModalProps
       anchor.click()
       anchor.remove()
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Не удалось сохранить кадр')
+      setError(caught instanceof Error ? caught.message : 'Could not save frame')
     } finally {
       setSavingFrame(false)
     }
@@ -145,7 +145,7 @@ export function PlayerModal({ result, onClose, onTagsChanged }: PlayerModalProps
             <p>{result.source_name}</p>
             <h2 id="player-title">{result.filename}</h2>
           </div>
-          <button className="icon-button" onClick={onClose} aria-label="Закрыть"><X /></button>
+          <button className="icon-button" onClick={onClose} aria-label="Close"><X /></button>
         </header>
         <div className="player-stage">
           {result.media_type === 'image' ? (
@@ -164,7 +164,7 @@ export function PlayerModal({ result, onClose, onTagsChanged }: PlayerModalProps
             />
           ) : (
             <div className="audio-player">
-              {result.thumbnail_url ? <img src={result.thumbnail_url} alt="Волновая форма" /> : null}
+              {result.thumbnail_url ? <img src={result.thumbnail_url} alt="Waveform" /> : null}
               <audio
                 ref={videoRef as React.RefObject<HTMLAudioElement>}
                 src={result.preview_url}
@@ -180,54 +180,54 @@ export function PlayerModal({ result, onClose, onTagsChanged }: PlayerModalProps
           {result.media_type !== 'image' ? (
             <div className="trim-panel">
               <div className="trim-heading">
-                <div><span>Начало</span><strong>{timecode(start)}</strong></div>
-                <div className="clip-length">Фрагмент {timecode(end - start)}</div>
-                <div><span>Конец</span><strong>{timecode(end)}</strong></div>
+                <div><span>Start</span><strong>{timecode(start)}</strong></div>
+                <div className="clip-length">Clip {timecode(end - start)}</div>
+                <div><span>End</span><strong>{timecode(end)}</strong></div>
               </div>
               <div className="trim-inputs">
                 <label>
-                  <span>Начало, сек.</span>
+                  <span>Start, seconds</span>
                   <input type="number" min="0" max={(end - 100) / 1000} step="0.04" value={(start / 1000).toFixed(2)} onChange={(event) => changeStart(Math.round(Number(event.target.value) * 1000))} />
                 </label>
                 <label>
-                  <span>Длина, сек.</span>
+                  <span>Length, seconds</span>
                   <input type="number" min="0.1" max={(duration - start) / 1000} step="0.1" value={((end - start) / 1000).toFixed(2)} onChange={(event) => changeLength(Number(event.target.value))} />
                 </label>
                 <label>
-                  <span>Конец, сек.</span>
+                  <span>End, seconds</span>
                   <input type="number" min={(start + 100) / 1000} max={duration / 1000} step="0.04" value={(end / 1000).toFixed(2)} onChange={(event) => changeEnd(Math.round(Number(event.target.value) * 1000))} />
                 </label>
               </div>
               <div className="dual-range">
-                <input aria-label="Начало фрагмента" type="range" min="0" max={duration} step="40" value={start} onChange={(event) => changeStart(Number(event.target.value))} />
-                <input aria-label="Конец фрагмента" type="range" min="0" max={duration} step="40" value={end} onChange={(event) => changeEnd(Number(event.target.value))} />
+                <input aria-label="Clip start" type="range" min="0" max={duration} step="40" value={start} onChange={(event) => changeStart(Number(event.target.value))} />
+                <input aria-label="Clip end" type="range" min="0" max={duration} step="40" value={end} onChange={(event) => changeEnd(Number(event.target.value))} />
               </div>
               <div className="export-row">
                 <button className="secondary-button" onClick={previewSelection} disabled={previewing}>
-                  <Play size={17} />{previewing ? 'Просмотр…' : 'Посмотреть фрагмент'}
+                  <Play size={17} />{previewing ? 'Previewing…' : 'Preview clip'}
                 </button>
-                <div className="mode-switch" aria-label="Режим экспорта">
-                  <button className={mode === 'fast' ? 'selected' : ''} onClick={() => setMode('fast')}><Gauge size={17} />Быстро</button>
-                  <button className={mode === 'accurate' ? 'selected' : ''} onClick={() => setMode('accurate')}><Check size={17} />Точно</button>
+                <div className="mode-switch" aria-label="Export mode">
+                  <button className={mode === 'fast' ? 'selected' : ''} onClick={() => setMode('fast')}><Gauge size={17} />Fast</button>
+                  <button className={mode === 'accurate' ? 'selected' : ''} onClick={() => setMode('accurate')}><Check size={17} />Accurate</button>
                 </div>
                 <button className="primary-button" onClick={exportMedia} disabled={exporting}>
                   {exporting ? <LoaderCircle className="spin" size={18} /> : <Download size={18} />}
-                  {exporting ? 'Подготовка…' : 'Скачать выбранный фрагмент'}
+                  {exporting ? 'Preparing…' : 'Download selected clip'}
                 </button>
               </div>
-              <p className="mode-hint">{mode === 'fast' ? 'Без рендера; граница может сдвинуться к ключевому кадру.' : 'Точно по кадру, H.264 CRF 17 и AAC 192 kbps.'}</p>
+              <p className="mode-hint">{mode === 'fast' ? 'No re-encoding; the boundary may shift to a keyframe.' : 'Frame-accurate, H.264 CRF 17 and AAC 192 kbps.'}</p>
             </div>
           ) : null}
           {result.media_type === 'video' ? (
             <div className="frame-panel">
               <div className="frame-copy">
                 <Camera size={18} />
-                <div><strong>Сохранить отдельный кадр</strong><span>PNG исходного разрешения · {timecode(frameAt)}</span></div>
+                <div><strong>Save a still frame</strong><span>Full-resolution PNG · {timecode(frameAt)}</span></div>
               </div>
               <label className="frame-time-input">
-                <span>Момент, сек.</span>
+                <span>Time, seconds</span>
                 <input
-                  aria-label="Момент снимка, секунда"
+                  aria-label="Frame time, seconds"
                   type="number"
                   min="0"
                   max={duration / 1000}
@@ -236,24 +236,24 @@ export function PlayerModal({ result, onClose, onTagsChanged }: PlayerModalProps
                   onChange={(event) => seekToFrame(Math.round(Number(event.target.value) * 1000))}
                 />
               </label>
-              <div className="frame-step" aria-label="Выбор точного кадра">
-                <button className="secondary-button" onClick={() => stepFrame(-1)} title="Предыдущий кадр"><ChevronLeft size={17} />1 кадр</button>
-                <button className="secondary-button" onClick={() => stepFrame(1)} title="Следующий кадр">1 кадр<ChevronRight size={17} /></button>
+              <div className="frame-step" aria-label="Select exact frame">
+                <button className="secondary-button" onClick={() => stepFrame(-1)} title="Previous frame"><ChevronLeft size={17} />1 frame</button>
+                <button className="secondary-button" onClick={() => stepFrame(1)} title="Next frame">1 frame<ChevronRight size={17} /></button>
               </div>
               <button className="primary-button" onClick={saveFrame} disabled={savingFrame}>
                 {savingFrame ? <LoaderCircle className="spin" size={18} /> : <Camera size={18} />}
-                {savingFrame ? 'Сохранение…' : 'Сохранить кадр'}
+                {savingFrame ? 'Saving…' : 'Save frame'}
               </button>
             </div>
           ) : null}
           <div className="tag-editor">
             <Tag size={17} />
-            <input aria-label="Теги через запятую" value={tagText} onChange={(event) => setTagText(event.target.value)} placeholder="police, night, Lucia" />
-            <button className="secondary-button" onClick={saveTags}>Сохранить теги</button>
+            <input aria-label="Comma-separated tags" value={tagText} onChange={(event) => setTagText(event.target.value)} placeholder="police, night, Lucia" />
+            <button className="secondary-button" onClick={saveTags}>Save tags</button>
           </div>
           {result.transcript ? <p className="modal-transcript">“{result.transcript}”</p> : null}
-          {exportPath ? <div className="success-message"><FolderOpen size={17} /><span>Готово: {exportPath}</span>{downloadUrl ? <a href={downloadUrl} download>Скачать ещё раз</a> : null}</div> : null}
-          {framePath ? <div className="success-message"><Camera size={17} /><span>Кадр сохранён: {framePath}</span>{frameDownloadUrl ? <a href={frameDownloadUrl} download>Скачать ещё раз</a> : null}</div> : null}
+          {exportPath ? <div className="success-message"><FolderOpen size={17} /><span>Ready: {exportPath}</span>{downloadUrl ? <a href={downloadUrl} download>Download again</a> : null}</div> : null}
+          {framePath ? <div className="success-message"><Camera size={17} /><span>Frame saved: {framePath}</span>{frameDownloadUrl ? <a href={frameDownloadUrl} download>Download again</a> : null}</div> : null}
           {error ? <div className="error-message">{error}</div> : null}
         </div>
       </section>

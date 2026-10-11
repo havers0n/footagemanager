@@ -14,7 +14,7 @@ from ..db import database
 from .vehicle_tracking import VehicleTracker, crop_box, descriptor, group_similar, overlap, padded_box, quality
 
 PIPELINE_VERSION = 2
-LABELS = {2: 'Автомобиль', 5: 'Автобус', 7: 'Грузовик'}
+LABELS = {2: 'Car', 5: 'Bus', 7: 'Truck'}
 
 
 def sampled_frames(source, interval, cancelled):
@@ -27,9 +27,9 @@ def sampled_frames(source, interval, cancelled):
         origin = float(stream.start_time or 0) * float(stream.time_base)
         for decoded in container.decode(stream):
             if cancelled():
-                raise InterruptedError('Обработка автомобилей остановлена')
+                raise InterruptedError('Vehicle processing stopped')
             if decoded.pts is None:
-                raise RuntimeError('Видеокадр не содержит timestamp')
+                raise RuntimeError('Video frame has no timestamp')
             timestamp = max(0, round((float(decoded.pts * decoded.time_base) - origin) * 1000))
             if timestamp < next_ms:
                 continue
@@ -42,10 +42,10 @@ def extract_vehicles(asset: dict, job_id: int, progress: Callable, cancelled: Ca
 
     source = Path(asset['path'])
     if not source.is_file():
-        raise FileNotFoundError('Исходное видео недоступно')
+        raise FileNotFoundError('Source video unavailable')
     model_path = settings.data_dir / 'models' / 'yolo11n.pt'
     model_path.parent.mkdir(parents=True, exist_ok=True)
-    progress(.01, 'Загрузка детектора и трекера автомобилей')
+    progress(.01, 'Loading vehicle detector and tracker')
     model = YOLO(str(model_path))
     run_id = f"v{asset['id']}-j{job_id}-{uuid.uuid4().hex[:8]}"
     output = settings.cache_dir / str(asset['id']) / 'vehicles' / run_id
@@ -96,28 +96,28 @@ def extract_vehicles(asset: dict, job_id: int, progress: Callable, cancelled: Ca
                     crop = frame[y1:y2, x1:x2]
                     for path, image in ((record['image_path'], crop), (record['frame_path'], frame)):
                         if not cv2.imwrite(path, image, [cv2.IMWRITE_JPEG_QUALITY, 95]):
-                            raise RuntimeError('Не удалось сохранить кадр автомобиля')
+                            raise RuntimeError('Could not save vehicle frame')
                     bx1, by1, bx2, by2 = bounds
                     record.update(timestamp_ms=timestamp, confidence=float(confidence), bbox_json=json.dumps(bounds),
                         crop_bbox_json=json.dumps(crop_bounds), quality_score=score, quality_json=json.dumps(metrics),
                         descriptor=descriptor(frame[by1:by2, bx1:bx2]))
             if frame_count % 25 == 0:
                 progress(.03 + .90 * min(1, timestamp / max(1, duration)),
-                         f'Треки: {len(records)} · {timestamp // 1000}/{duration // 1000} с')
+                         f'Tracks: {len(records)} · {timestamp // 1000}/{duration // 1000} s')
         if frame_count == 0:
-            raise RuntimeError('В видео нет доступных кадров')
+            raise RuntimeError('No frames available in the video')
         if cancelled():
-            raise InterruptedError('Обработка автомобилей остановлена')
+            raise InterruptedError('Vehicle processing stopped')
         # Unconfirmed one-frame proposals are not final ByteTrack tracks.
         for key in [key for key, record in records.items() if not record['confirmed']]:
             rejected = records.pop(key)
             Path(rejected['image_path']).unlink(missing_ok=True)
             Path(rejected['frame_path']).unlink(missing_ok=True)
-        progress(.95, 'Группировка похожих автомобилей между сценами')
+        progress(.95, 'Grouping similar vehicles across scenes')
         group_similar(list(records.values()))
         with database() as conn:
             if not conn.execute('SELECT 1 FROM assets WHERE id=? AND quick_hash=?', (asset['id'], asset['quick_hash'])).fetchone():
-                raise RuntimeError('Видео изменено или удалено во время обработки')
+                raise RuntimeError('Video changed or deleted during processing')
             # Archive earlier runs including all manual labels. Similarity grouping never removes a track.
             conn.execute('UPDATE vehicle_crops SET archived=1 WHERE asset_id=?', (asset['id'],))
             for record in records.values():

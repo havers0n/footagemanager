@@ -13,20 +13,20 @@ export function SearchBar({ value, onChange, filtersOpen, onToggleFilters, activ
     <div className="search-wrap">
       <Search aria-hidden="true" size={21} />
       <input
-        aria-label="Поиск по библиотеке"
+        aria-label="Search library"
         autoFocus
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        placeholder="police chase night, Lucia, взрыв, толпа…"
+        placeholder="police chase night, Lucia, explosion, crowd…"
       />
       {value ? (
-        <button className="icon-button" aria-label="Очистить поиск" onClick={() => onChange('')}>
+        <button className="icon-button" aria-label="Clear search" onClick={() => onChange('')}>
           <X size={18} />
         </button>
       ) : null}
       <button className={`filter-button ${filtersOpen ? 'active' : ''}`} onClick={onToggleFilters} aria-expanded={filtersOpen}>
         <SlidersHorizontal size={18} />
-        Фильтры
+        Filters
         {activeFilterCount ? <span className="count-badge">{activeFilterCount}</span> : null}
       </button>
     </div>

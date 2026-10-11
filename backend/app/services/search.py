@@ -352,7 +352,7 @@ def search_assets(query: str, media_types: list[str], source_id: int | None, min
                 payload["result_id"] = f"{asset['id']}:hud:{row['id']}"
                 payload["thumbnail_url"] = f"/api/hud/{row['id']}/thumbnail"
                 payload["reason"] = "Wanted-level HUD"
-                payload["transcript"] = f"Розыск: {row['star_count']} ★"
+                payload["transcript"] = f"Wanted level: {row['star_count']} ★"
                 hud_ranking.append((payload["result_id"], payload))
             rankings.append(hud_ranking)
 
@@ -377,7 +377,7 @@ def search_assets(query: str, media_types: list[str], source_id: int | None, min
                     payload = _base_result(asset, scene, bounds=bounds, frame_id=frame_id)
                     payload["result_id"] = f"{asset['id']}:ui:{scene['id']}"
                     payload["reason"] = "Game interface"
-                    payload["transcript"] = "Игровой интерфейс / HUD"
+                    payload["transcript"] = "Game interface / HUD"
                     ui_ranking.append((payload["result_id"], payload))
                 rankings.append(ui_ranking)
             except Exception:

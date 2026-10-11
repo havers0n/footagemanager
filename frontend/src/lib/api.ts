@@ -7,7 +7,7 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
   })
   if (!response.ok) {
     const body = await response.json().catch(() => ({ detail: response.statusText }))
-    throw new Error(body.detail || 'Не удалось выполнить запрос')
+    throw new Error(body.detail || 'Request failed')
   }
   return response.json() as Promise<T>
 }
