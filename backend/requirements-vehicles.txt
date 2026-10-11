@@ -1,0 +1,4 @@
+-r requirements-core.txt
+ultralytics==8.4.142
+av>=14,<19
+lap>=0.5.12,<0.6

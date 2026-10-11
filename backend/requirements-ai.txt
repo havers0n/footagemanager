@@ -1,0 +1,13 @@
+-r requirements-core.txt
+torch>=2.7.0
+torchaudio>=2.7.0
+transformers>=4.53.0,<5
+accelerate>=1.9.0
+sentencepiece>=0.2.0
+safetensors>=0.5.3
+lancedb>=0.24.0
+pyarrow>=20.0.0
+librosa>=0.11.0
+soundfile>=0.13.1
+whisperx>=3.4.2
+
